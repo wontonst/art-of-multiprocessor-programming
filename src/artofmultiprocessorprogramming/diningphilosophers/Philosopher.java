@@ -4,6 +4,7 @@
  */
 package artofmultiprocessorprogramming.diningphilosophers;
 
+import artofmultiprocessorprogramming.MPUtility;
 import artofmultiprocessorprogramming.VerboseObject;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -14,6 +15,12 @@ import java.util.logging.Logger;
  * @author RoyZheng
  */
 public class Philosopher extends VerboseObject implements Runnable {
+
+    // Actual thinking time = THINK_TIME_BASE + (0,THINK_TIME_RANGE)
+    public static int THINK_TIME_BASE = 5000;///< minimum thinking time
+    public static int THINK_TIME_RANGE = 1000;///< random additional time
+    public static int EAT_TIME_BASE = 500;///< minimum thinking time
+    public static int EAT_TIME_RANGE = 2500;///< random additional time
 
     private long last_meal = 0;
     private Chopstick c1;
@@ -54,7 +61,7 @@ public class Philosopher extends VerboseObject implements Runnable {
         this.print("Starting thread");
         while (true) {
             try {
-                Thread.sleep(Main.THINKING_TIME + (int) (Math.random() * 500));
+                Thread.sleep(MPUtility.generateSleepTime(Philosopher.THINK_TIME_BASE, Philosopher.THINK_TIME_RANGE));
             } catch (InterruptedException ex) {
                 Logger.getLogger(Philosopher.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -101,12 +108,12 @@ public class Philosopher extends VerboseObject implements Runnable {
         (new Thread(new Runnable() {
             @Override
             public void run() {
+                self.state = PhilosopherState.EATING;
+                self.last_meal = System.currentTimeMillis();
+                table.repaintCanvas();
+                self.print("eating food with chopsticks");
                 try {
-                    self.state = PhilosopherState.EATING;
-                    self.last_meal = System.currentTimeMillis();
-                    table.repaintCanvas();
-                    self.print("eating food with chopsticks");
-                    Thread.sleep((int) (Math.random() * 10000));
+                    Thread.sleep(MPUtility.generateSleepTime(Philosopher.EAT_TIME_BASE, Philosopher.EAT_TIME_RANGE));
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Philosopher.class.getName()).log(Level.SEVERE, null, ex);
                 }

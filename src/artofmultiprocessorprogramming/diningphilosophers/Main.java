@@ -12,7 +12,6 @@ import artofmultiprocessorprogramming.GraphicDisplay;
  */
 public class Main {
 
-    public static int THINKING_TIME = 5500;
     
     public static void main(String[] args) {
         Table t = new Table();
