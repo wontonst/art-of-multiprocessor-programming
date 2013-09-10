@@ -8,3 +8,5 @@
 
 nbproject/
 manifest.mf
+/build/
+/dist/

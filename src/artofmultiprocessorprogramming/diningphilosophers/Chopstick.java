@@ -6,28 +6,60 @@ package artofmultiprocessorprogramming.diningphilosophers;
 
 import artofmultiprocessorprogramming.VerboseObject;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author RoyZheng
  */
 public class Chopstick extends VerboseObject {
-    
-    Semaphore leftpair;
-    Semaphore rightpair;
-    
+
+    Semaphore wait = new Semaphore(1);
     int num;///<chopstick number
-    
-    public Chopstick(int num){
-        super("Chopstick"+num);
+    Philosopher in_use = null;
+
+    public Chopstick(int num) {
+        super("Chopstick" + num);
         this.num = num;
     }
-    public void pairLeft(Chopstick c){
-        Semaphore s = new Semaphore(1);
-        this.leftpair = s;
-        c.rightpair = s;
+
+    public boolean beingUsed() {
+        return this.in_use != null;
     }
-    public synchronized boolean attemptPickup(){
-        if(leftpair.availablePermits() != 0 && right)
+
+    public boolean tryTake(Philosopher p) {
+        if (!this.beingUsed()) {
+            this.in_use = p;
+            if (this.wait.availablePermits() == 0) {
+                this.print("ERROR! NO PERMITS AVAILABLE TO TAKE EVEN THOUGH CHOPSTICK IS FREE!");
+            } else {
+                try {
+                    this.wait.acquire();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Chopstick.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public void dropChopstick(Philosopher p) {
+        if (p != this.in_use) {
+            this.print("ERROR! Philsopher " + p + " tried to drop this chopstick even though he wasn't holding it.");
+        } else {
+            this.in_use = null;
+            this.wait.release();
+        }
+    }
+
+    public void waitUntilFree() {
+        try {
+            this.wait.acquire();
+            this.wait.release();
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Chopstick.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }

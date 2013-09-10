@@ -15,15 +15,25 @@ import java.util.logging.Logger;
  */
 public class Philosopher extends VerboseObject implements Runnable {
 
-    private Semaphore eating = new Semaphore(1);
-    private long last_meal;
+    private long last_meal = 0;
     private Chopstick c1;
     private Chopstick c2;
     private Philosopher p1;
     private Philosopher p2;
     private Table table;
     int num;///<philosopher number
+    PhilosopherState state = PhilosopherState.THINKING;
 
+    public enum PhilosopherState {
+
+        EATING, HUNGRY, THINKING
+    }
+
+    /**
+     *
+     * @param num id of the philosopher
+     * @param t table the philosopher is sitting on
+     */
     public Philosopher(int num, Table t) {
         super("Philosopher" + num);
         this.table = t;
@@ -44,18 +54,90 @@ public class Philosopher extends VerboseObject implements Runnable {
         this.print("Starting thread");
         while (true) {
             try {
-                Thread.sleep(Main.THINKING_TIME);
+                Thread.sleep(Main.THINKING_TIME + (int) (Math.random() * 500));
             } catch (InterruptedException ex) {
                 Logger.getLogger(Philosopher.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            this.print("hungry");
+            this.state = PhilosopherState.HUNGRY;
+            this.table.repaintCanvas();
             while (true) {
+                try {
+                    this.print("waiting for permission to try to retrieve chopstick");
+                    this.table.getChopstickPermission();
+                    this.print("permission granted");
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Philosopher.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 this.print("attempting to retrieve chopstick");
-                this.attemptChopstick();
+                if (this.attemptChopstick()) {
+                    break;
+                }
             }
         }
     }
 
-    protected void attemptChopstick() {
+    protected boolean attemptChopstick() {
+
+        if (this.c1.beingUsed()) {
+            this.print("could not obtain chopsticks because they are in use");
+            this.table.releaseChopstickPermission();
+            this.c1.waitUntilFree();
+            return false;
+        }
+        if (this.c2.beingUsed()) {
+            this.print("could not obtain chopsticks because they are in use");
+            this.table.releaseChopstickPermission();
+            this.c2.waitUntilFree();
+            return false;
+        }
+        if (!this.c1.tryTake(this)
+                || !this.c2.tryTake(this)) {
+            this.print("CRITICAL ERROR! tryTake failed even though !beingUsed!");
+            this.table.releaseChopstickPermission();
+            return false;
+        }
+        final Philosopher self = this;
+        (new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    self.state = PhilosopherState.EATING;
+                    self.last_meal = System.currentTimeMillis();
+                    table.repaintCanvas();
+                    self.print("eating food with chopsticks");
+                    Thread.sleep((int) (Math.random() * 10000));
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Philosopher.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                c1.dropChopstick(self);
+                c2.dropChopstick(self);
+                self.state = PhilosopherState.THINKING;
+                table.repaintCanvas();
+                self.print("finished eating, dropping chopsticks");
+            }
+        })).start();
+        this.table.releaseChopstickPermission();
+        return true;
+    }
+
+    public boolean isHungry() {
+        return this.state == PhilosopherState.HUNGRY;
+    }
+
+    public boolean isEating() {
+        return this.state == PhilosopherState.EATING;
+    }
+
+    public boolean isThinking() {
+        return this.state == PhilosopherState.THINKING;
+    }
+
+    public PhilosopherState getState() {
+        return this.state;
+    }
+
+    public String toString() {
+        return this.getName() + " holding " + this.c1 + ", " + this.c2;
     }
 }

@@ -16,4 +16,10 @@ public class VerboseObject {
     public void print(String p){
         System.out.println(name+":"+p);
     }
+    public String toString(){
+        return this.name;
+    }
+    public String getName(){
+        return this.name;
+    }
 }
