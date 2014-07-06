@@ -43,7 +43,7 @@ public class PhilosophersCanvas extends JPanel {
         }
         x = 7;
         y = 50;
-            g.setColor(Color.black);
+        g.setColor(Color.black);
         for (int i = 0; i != t.chopsticks.size(); i++) {
             if (t.chopsticks.get(i).beingUsed()) {
                 g.fillRect(x, y, 10, 100);
